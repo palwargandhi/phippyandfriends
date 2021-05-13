@@ -32,7 +32,7 @@ steps:
   displayName: 'helm package'
 - bash: |
     cd $(projectName)/charts/$(projectName)
-    echo $(SP_PASS) | helm registry login $(registryName).azurecr.io --username $(SP_ID) --password-stdin
+    echo $(SP_PASS) | helm registry login $(registryName) --username $(SP_ID) --password-stdin
     chartVersion=`helm chart save . $(registryName).azurecr.io/helm/$(projectName) | grep version | awk -F ': ' '{print $2}'`
     helm chart push $(registryName).azurecr.io/helm/$(projectName):$chartVersion
     echo $(jq -n --arg chartVersion "$chartVersion" --arg imgVersion "$(imageTag)" '{chartVersion: $chartVersion, imgVersion: $imgVersion}') > $(build.artifactStagingDirectory)/variables.json    
