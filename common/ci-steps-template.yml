@@ -31,18 +31,13 @@ steps:
   failOnStderr: true
   displayName: 'helm package'
 - bash: |
-    cd $(projectName)
-    chartPackage=$(ls $(projectName)-$(helmChartVersion).tgz)
-    az acr helm push \
-        -n $(registryName) \
-        -u $(registryLogin) \
-        -p '$(registryPassword)' \
-        $chartPackage
-    echo $(jq -n --arg version "$(helmChartVersion)" '{helmChartVersion: $version}') > $(build.artifactStagingDirectory)/variables.json
+    cd $(projectName)/charts/$(projectName)
+    echo $(SP_PASS) | helm registry login $(registryName).azurecr.io --username $(SP_ID) --password-stdin
+    chartVersion=`helm chart save . $(registryName).azurecr.io/helm/$(projectName) | grep version | awk -F ': ' '{print $2}'`
+    helm chart push $(registryName).azurecr.io/helm/$(projectName):$chartVersion
+    echo $(jq -n --arg chartVersion "$chartVersion" --arg imgVersion "$(imageTag)" '{chartVersion: $chartVersion, imgVersion: $imgVersion}') > $(build.artifactStagingDirectory)/variables.json    
   failOnStderr: true
-  name: helmPush
-  condition: and(succeeded(), eq(variables['build.sourceBranch'], 'refs/heads/master'))
-  displayName: 'az acr helm push'
+  displayName: "helm package"
 - publish: $(build.artifactStagingDirectory)
   artifact: build-artifact
   condition: and(succeeded(), eq(variables['build.sourceBranch'], 'refs/heads/master'))
